@@ -8,13 +8,26 @@ public class Deck
     // Constructor initializes and optionally shuffles the deck
     public Deck(bool shuffleDeck = true)
     {
+        PrintResources();
         Cards = new List<Card>();
-        CreateFullDeck();
+        // CreateFullDeck();
         if (shuffleDeck)
         {
             Shuffle();
         }
     }
+
+    void PrintResources()
+    {
+        Object[] objects = Resources.LoadAll("Prefab/BackColor_Black", typeof(Object));  // Loads all assets in the Resources root
+        foreach (var obj in objects)
+        {
+            Debug.Log("Loaded resource: " + obj.name);
+        }
+
+        Debug.LogError("DONE");
+    }
+
 
     // Creates one card for each combination of Suit and Rank
     private void CreateFullDeck()
@@ -23,18 +36,51 @@ public class Deck
         {
             foreach (Rank rank in System.Enum.GetValues(typeof(Rank)))
             {
-                // Assume cardSprites is a dictionary loaded with all card sprites, keyed by "Rank_of_Suit"
-                string key = $"{rank}_of_{suit}";
-                Sprite image = Resources.Load<Sprite>($"Cards/{key}");
-                if (image == null)
+                string rankKey = FormatRankKey(rank);
+                string key = $"Black_PlayingCards_{suit}{rankKey}_00";  // Concatenate to form something like Diamond02, Club10
+                GameObject cardPrefab = Resources.Load<GameObject>("Prefab/BackColor_Black" + key);
+                if (cardPrefab == null) {
+                    Debug.LogError("Failed to load prefab at path: " + "Prefab/BackColor_Black" + key);
+                }
+                if (cardPrefab == null)
                 {
-                    Debug.LogError($"Card image not found for {key}");
+                    Debug.LogError($"Card prefab not found for {key}");
                     continue;
                 }
-                Cards.Add(new Card(suit, rank, image));
+                Cards.Add(new Card(suit, rank, cardPrefab));
             }
         }
     }
+
+    private string FormatRankKey(Rank rank)
+    {
+        switch (rank)
+        {
+            case Rank.Two:
+            case Rank.Three:
+            case Rank.Four:
+            case Rank.Five:
+            case Rank.Six:
+            case Rank.Seven:
+            case Rank.Eight:
+            case Rank.Nine:
+                return ((int)rank).ToString("D2");  // Formats the number as two digits (e.g., 2 becomes 02)
+            case Rank.Ten:
+                return "10";
+            case Rank.Jack:
+                return "11";  // Assuming your Jack, Queen, King, Ace are saved as Jack10, Queen10, etc.
+            case Rank.Queen:
+                return "12";
+            case Rank.King:
+                return "13";
+            case Rank.Ace:
+                return "01"; 
+            default: 
+
+                return "00";
+        }
+    }
+
 
     // Shuffles the deck of cards
     public void Shuffle()

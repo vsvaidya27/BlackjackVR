@@ -3,13 +3,13 @@ using UnityEngine;
 
 public enum Suit
 {
-    Clubs, Diamonds, Hearts, Spades
+    Club, Diamond, Heart, Spade
 }
 
 public enum Rank
 {
     Two = 2, Three, Four, Five, Six, Seven, Eight, Nine, Ten,
-    Jack = 10, Queen = 10, King = 10, Ace = 11  // Initial values for game logic
+    Jack, Queen, King, Ace  // Initial values for game logic
 }
 
 public class Card
@@ -17,14 +17,14 @@ public class Card
     public Suit Suit { get; private set; }
     public Rank Rank { get; private set; }
     public int Value { get; private set; }
-    public Sprite Image { get; private set; }  // Assuming Sprite is assigned and managed externally
+    public GameObject CardPrefab { get; private set; }
 
     // Constructor to initialize a card
-    public Card(Suit suit, Rank rank, Sprite image)
+    public Card(Suit suit, Rank rank, GameObject cardPrefab )
     {
         Suit = suit;
         Rank = rank;
-        Image = image;
+        CardPrefab = cardPrefab; 
         AssignValue();  // Set the card's value based on its rank
     }
 

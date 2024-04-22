@@ -13,7 +13,7 @@ public class GameState : MonoBehaviour
         deck = new Deck();  // Create and shuffle a new deck
         player = new Player();
         dealer = new Player();  // Could customize a 'Dealer' class that inherits 'Player' if dealer rules differ
-
+        Debug.LogError("HIT");
         InitialDeal();
     }
 /*
