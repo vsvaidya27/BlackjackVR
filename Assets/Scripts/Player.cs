@@ -83,4 +83,34 @@ public class Player: MonoBehaviour
         }
         return playerHands;
     }
+
+    public int GetCurrentHandValue()
+    {
+        int total = 0;
+        int aceCount = 0; // Number of aces in the hand, initially counted as 11
+
+        // Ensure there is an active hand to evaluate
+        if (ActiveHandIndex < Hands.Count && Hands[ActiveHandIndex] != null)
+        {
+            foreach (Card card in Hands[ActiveHandIndex])
+            {
+                int points = card.CardRank;
+                if (card.CardRank == 1) // Assuming Ace is represented by 1
+                {
+                    aceCount++;
+                    points = 11; // Count all Aces as 11 initially
+                }
+                total += points;
+            }
+
+            // Adjust for Aces if total value exceeds 21
+            while (total > 21 && aceCount > 0)
+            {
+                total -= 10; // Reduce total by 10 for each Ace counted as 11
+                aceCount--; // Reduce the count of Aces still being counted as 11
+            }
+        }
+
+        return total;
+    }
 }

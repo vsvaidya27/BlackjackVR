@@ -1133,10 +1133,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 935557451}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 085d2b1c20a7d40f8bf92b6684b16c53, type: 3}
+  m_Script: {fileID: 11500000, guid: 550d41a4ef215499b9c86c3047f4b65d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cardPrefab: {fileID: 0}
 --- !u!1 &939253910
 GameObject:
   m_ObjectHideFlags: 0
