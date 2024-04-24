@@ -113,4 +113,14 @@ public class Player: MonoBehaviour
 
         return total;
     }
+
+    public bool canSplit(){
+
+        if (Hands[ActiveHandIndex].Count == 2) {
+
+            return Hands[ActiveHandIndex].Rank == Hands[ActiveHandIndex].Rank;
+        }
+        return false;
+    }
 }
+

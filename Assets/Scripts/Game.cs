@@ -16,11 +16,7 @@ public class Game : MonoBehaviour
 
     void Start()
     {
-        SetupGame();
-    }
 
-    void SetupGame()
-    {
         GameObject deckObject = new GameObject("Deck");
         deck = deckObject.AddComponent<Deck>();
 
@@ -28,7 +24,14 @@ public class Game : MonoBehaviour
         player = playerObject.AddComponent<Player>();
 
         GameObject dealerObject = new GameObject("Dealer");
+        
         dealer = dealerObject.AddComponent<Player>();
+        SetupGame();
+    }
+
+    void SetupGame()
+    {
+        
 
         splitDetected = false;
         hitDetected = false;
@@ -39,37 +42,58 @@ public class Game : MonoBehaviour
         
     }
 
-    /*
+    
     void PlayerDecision() //I am not sure how we are detecting with gesture, so this is probably wrong. 
     {
 
-        // HIT 
-        if (GestureDetector.DetectHitGesture())
+        bool splitable =  player.canSplit();
+        
+        // SPLIT 
+        if (splitDetected)
+        {
+
+            // create new hand, play active hand then the other
+            Split(player);
+        }
+
+        // HIT
+        else if (hitDetected)
         {
             Hit(player);
         }
 
         // STAND
-        else if (GestureDetector.DetectStandGesture())
+        else if (stand)
         {
-            Stand();
+            Stand(player);
         }
 
-        // SPLIT
-        else if (GestureDetector.DetectSplitGesture())
-        {
-            Split(player);
-        }
+    
     }
-    */
+    
 
     IEnumerator PlayFullGame()
     {
         //Deal Inital
+        
+        DealInitialCards();
 
-        Debug.LogError("NOT PASS");
-        yield return new WaitUntil(() => (splitDetected == true) || (hitDetected == true) || (standDetected == true));
-        Debug.LogError("PASS");
+        while (player.ActiveHandIndex < Hands.count) {
+
+             yield return new WaitUntil(() => (splitDetected == true) || (hitDetected == true) || (standDetected == true));
+        
+
+            // PLAYER LOGIC 
+            while (player.GetCurrentHandValue() < 21) 
+            {
+                PlayerDecision();
+            }
+
+        }
+       
+            
+
+    
        
         
         
@@ -98,22 +122,7 @@ public class Game : MonoBehaviour
 
 
 
-    void PlayHand()
-    {
 
-        // MODIFY TO RECEVIVE VOICE INOPUT
-        DealInitialCards();
-        // Wait for player actions triggered by gestures detected in Update()
-
-
-        // PLAYER DECISION
-
-        // ENDPLAYER TURN
-
-        // EVALUATE HANDS
-
-        // RESET HAND DETAILS, PLAY A NEW ONE 
-    }
 
     void DealInitialCards()
     {
@@ -122,8 +131,7 @@ public class Game : MonoBehaviour
         player.AddCard(deck.GetTopCard());
         dealer.AddCard(deck.GetTopCard());
 
-        Debug.Log("Player hand: " + player.ToString());
-        Debug.Log("Dealer hand: " + dealer.ToString());
+   
     }
 
     /*
