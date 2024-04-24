@@ -1,6 +1,7 @@
 using UnityEngine;
+using UnityEngine.UIElements;
 
-public class Card: MonoBehaviour
+public class Card : MonoBehaviour
 {
     // Public variables for the front and back sides of the card
     public GameObject CardPrefab;
@@ -20,7 +21,21 @@ public class Card: MonoBehaviour
     public void InitializeCard(GameObject cardPrefab, int rank, string suit)
     {
         CardPrefab = cardPrefab;
-        cardRank = rank;
+
+        if (rank == 1)
+        {
+            cardRank = 11;
+        }
+
+        else if (rank == 11 || rank == 12 || rank == 13)
+        {
+            cardRank = 10;
+        }
+        else
+        {
+            cardRank = rank;
+        }
+
         cardSuit = suit;
     }
 
@@ -28,7 +43,7 @@ public class Card: MonoBehaviour
     public void FlipCard()
     {
         isFaceUp = !isFaceUp;
- 
+
     }
 
     public override string ToString()

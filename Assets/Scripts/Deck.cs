@@ -5,7 +5,8 @@ public class Deck : MonoBehaviour
 {
     public GameObject cardPrefab; // Assign a prefab that has the Card component
     private List<Card> deck = new List<Card>();
-
+    private Vector3 initialCardPosition = new Vector3(0, 0, 0);
+    private Vector3 scaleVec = new Vector3(5, 5, 5);
     void Awake()
     {
         CreateMultipleDecks(8); // Create 8 decks of cards
@@ -28,7 +29,8 @@ public class Deck : MonoBehaviour
                     GameObject cardPrefab = Resources.Load<GameObject>($"Playing Cards/Resource/Prefab/BackColor_Black/{cardKey}");
                     if (cardPrefab != null)
                     {
-                        GameObject cardGO = Instantiate(cardPrefab);
+                        GameObject cardGO = Instantiate(cardPrefab, initialCardPosition, Quaternion.identity);
+                        cardGO.transform.localScale = scaleVec;
                         cardGO.SetActive(true);
 
                         Card cardComponent = cardGO.AddComponent<Card>();
@@ -36,7 +38,6 @@ public class Deck : MonoBehaviour
                         if (cardComponent != null)
                         {
 
-                            // Assuming InitializeCard takes GameObjects for front/back, a rank integer, and a suit string
                             cardComponent.InitializeCard(cardGO, int.Parse(ranks[j]), suit); // parse rank from string to int
                             deck.Add(cardComponent);
                         }
@@ -72,6 +73,7 @@ public class Deck : MonoBehaviour
         {
             Card topCard = deck[0];
             deck.RemoveAt(0);
+            topCard.CardPrefab.SetActive(true);
             return topCard;
         }
         else
