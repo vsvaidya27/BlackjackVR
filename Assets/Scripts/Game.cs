@@ -9,6 +9,11 @@ public class Game : MonoBehaviour
     public Deck deck;
     private bool gameRoundEnded = false;
 
+    public bool splitDetected;
+    public bool hitDetected;
+    public bool standDetected;
+
+
     void Start()
     {
         SetupGame();
@@ -25,9 +30,16 @@ public class Game : MonoBehaviour
         GameObject dealerObject = new GameObject("Dealer");
         dealer = dealerObject.AddComponent<Player>();
 
-        PlayHand();
+        splitDetected = false;
+        hitDetected = false;
+        standDetected = false;
+
+        Debug.LogError("GAME SETUP DONE");
+        StartCoroutine(PlayFullGame());
+        
     }
 
+    /*
     void PlayerDecision() //I am not sure how we are detecting with gesture, so this is probably wrong. 
     {
 
@@ -49,11 +61,47 @@ public class Game : MonoBehaviour
             Split(player);
         }
     }
+    */
+
+    IEnumerator PlayFullGame()
+    {
+        //Deal Inital
+
+        Debug.LogError("NOT PASS");
+        yield return new WaitUntil(() => (splitDetected == true) || (hitDetected == true) || (standDetected == true));
+        Debug.LogError("PASS");
+       
+        
+        
+
+
+        // reset values
+    }
+
+    public void setSplitDetected()
+    {
+        Debug.LogError("SPLIT DETECTED" + splitDetected);
+        splitDetected = true;
+    }
+
+    public void setStandDetected()
+    {
+        Debug.LogError("STAND DETECTED " +  hitDetected);
+        standDetected = true;
+    }
+
+    public void setHitDetected()
+    {
+        Debug.LogError("HIT DETECTED " + standDetected);
+        hitDetected = true;
+    }
+
+
 
     void PlayHand()
     {
 
-        // MODIFY TO RECEIVE USER INPUT FOR BET AMOUNT
+        // MODIFY TO RECEVIVE VOICE INOPUT
         DealInitialCards();
         // Wait for player actions triggered by gestures detected in Update()
 
@@ -78,6 +126,7 @@ public class Game : MonoBehaviour
         Debug.Log("Dealer hand: " + dealer.ToString());
     }
 
+    /*
     public void Hit(Player player)
     {
         if (player.Busted || gameRoundEnded)
@@ -95,13 +144,17 @@ public class Game : MonoBehaviour
             EndPlayerTurn();
         }
     }
+    */
 
+    /*
     public void Stand()
     {
         Debug.Log("Player stands.");
         EndPlayerTurn();
     }
+    */
 
+    /*
     void EndPlayerTurn()
     {
         if (!player.Busted)
@@ -109,6 +162,7 @@ public class Game : MonoBehaviour
             DealerTurn();
         }
     }
+    */
 
     public void Split(Player player)
     {
@@ -120,6 +174,9 @@ public class Game : MonoBehaviour
         }
     }
 
+
+
+    /*
     void DealerTurn()
     {
         while (dealer.HandValue < 17)
@@ -130,7 +187,10 @@ public class Game : MonoBehaviour
         }
         EvaluateHands();
     }
+    */
 
+
+    /*
     void EvaluateHands()
     {
         if (player.Busted)
@@ -159,6 +219,8 @@ public class Game : MonoBehaviour
         deck.ShuffleDeck();
         gameRoundEnded = false;
     }
+
+    */
 
     void AnimateCard(Card card, Player player)
     {
