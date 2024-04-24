@@ -27,10 +27,11 @@ public class SpawnCards : MonoBehaviour
     //         MoveCard(secondCard, new Vector3(40, 11.5f, 220), speed2);
     // }
 
-    public void MoveCard(Card card, Vector3 targetPosition, float speed)
+    public void MoveCard(Card card, Vector3 targetPosition, Quaternion targetRotation, float speed)
     {
 
         card.transform.position = targetPosition;
+        card.transform.rotation = targetRotation;
 
     }
 }

@@ -18,11 +18,13 @@ public class Game : MonoBehaviour
     public bool standDetected;
 
     private Vector3 initialPlayerCardPosition = new Vector3(-2.2f, 10.2f, 226.8f);
+    private Vector3 initialDealerCardPosition = new Vector3(24.3f, 10.5f, 100.4f);
     private float playerSpawnZOffset = -20f;  // Offset for each new card in the x and y directions
     private float playerSpawnYOffset = 0.3f;  // Offset for each new card in the x and y directions
     private float playerSpawnXOffset = -15f;  // Offset for each new card in the x and y directions
-    private float dealerSpawnXOffset = -25f;
+    private float dealerSpawnXOffset = -15f;
     private Vector3 playerCardSpawnOffset;
+    private Vector3 dealerCardSpawnOffset;
 
 
     public SpawnCards spawnCards;
@@ -32,6 +34,7 @@ public class Game : MonoBehaviour
     {
 
         playerCardSpawnOffset = new Vector3(playerSpawnXOffset, playerSpawnYOffset, playerSpawnZOffset);
+        dealerCardSpawnOffset = new Vector3(dealerSpawnXOffset, 0f, 0f);
 
         GameObject deckObject = new GameObject("Deck");
         deck = deckObject.AddComponent<Deck>();
@@ -62,6 +65,7 @@ public class Game : MonoBehaviour
         while (dealer.GetCurrentHandValue() < 17)
         {
             Card newCard = deck.GetTopCard();
+            SpawnCard(newCard, initialDealerCardPosition);
             dealer.AddCard(newCard);
             // AnimateCard(newCard, dealer);
         }
@@ -148,6 +152,7 @@ public class Game : MonoBehaviour
         DealInitialCards();
 
         SpawnCardsForGame(player);
+        SpawnCardsForGame(dealer, true);
 
 
         Debug.LogError("DEBUG PLAYER STARTING HAND " + player.ToString());
@@ -212,26 +217,33 @@ public class Game : MonoBehaviour
         }
         else
         {
-            Vector3 spawnPosition = initialPlayerCardPosition;
+            int cardIndex = 0;
+            Vector3 spawnPosition = initialDealerCardPosition;
 
             // Vector3 spawnPosition = initialDealer;
             // You can adjust this for the dealer's logic if needed
             foreach (Card card in player.Hands[player.ActiveHandIndex].Cards)
             {
-
-                // IMPLEMENT ONE CARD REVERSE LOGIC
-                SpawnCard(card, spawnPosition);
-                spawnPosition += playerCardSpawnOffset; // Adjust position similarly for dealer's cards
+                bool flipped = (cardIndex == 1);
+                SpawnCard(card, spawnPosition, flipped);
+                spawnPosition += dealerCardSpawnOffset; // Adjust position similarly for dealer's cards
+                cardIndex += 1;
             }
+            initialDealerCardPosition = spawnPosition;
         }
     }
 
-    public void SpawnCard(Card card, Vector3 position)
+    public void SpawnCard(Card card, Vector3 position, bool flipped = false)
     {
         if (card != null)
         {
             Debug.Log($"Spawning card: {card.ToString()} at position {position}");
-            spawnCards.MoveCard(card, position, 1.0f); // Assuming spawnCards is an instance of a class that handles moving cards
+
+            // Set the rotation based on the flipped flag
+            Quaternion rotation = flipped ? Quaternion.Euler(0, 0, 180) : Quaternion.identity;
+
+            // Move the card to the specified position with the given rotation
+            spawnCards.MoveCard(card, position, rotation, 1.0f); // Modified to include rotation handling
         }
         else
         {
