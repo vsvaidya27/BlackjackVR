@@ -62,25 +62,111 @@ public class Game : MonoBehaviour
 
     }
 
-    void DealerFlipSecondCard(Card secondCard)
+    public IEnumerator SpawnInitialCards()
     {
+        // Assuming the first two cards in each hand are meant for the initial deal
+        // Spawn cards alternating between player and dealer
 
-        SpawnCard(secondCard, secondCard.transform.position);
+        // Spawn the first round of cards (player-dealer-player-dealer)
+        for (int i = 0; i < 2; i++) // For two rounds of card distribution
+        {
+            // Player card
+            if (i < player.Hands[player.ActiveHandIndex].Cards.Count)
+            {
+                Card playerCard = player.Hands[player.ActiveHandIndex].Cards[i];
+
+                yield return StartCoroutine(SpawnCard(playerCard, initialPlayerCardPosition, true));
+                initialPlayerCardPosition = CalculateNextCardPosition(initialPlayerCardPosition, playerCardSpawnOffset);
+            }
+
+            // Dealer card, the second dealer card is face down
+            if (i < dealer.Hands[dealer.ActiveHandIndex].Cards.Count)
+            {
+
+                Card dealerCard = dealer.Hands[dealer.ActiveHandIndex].Cards[i];
+
+                bool isFaceUp = i != 1; // Face up unless it's the second card
+                yield return StartCoroutine(SpawnCard(dealerCard, initialDealerCardPosition, isFaceUp, i == 1));
+                initialDealerCardPosition = CalculateNextCardPosition(initialDealerCardPosition, dealerCardSpawnOffset);
+            }
+        }
     }
 
-    void DealerTurn()
+    private IEnumerator SpawnCard(Card card, Vector3 position, bool faceUp = true, bool dealerSecond = false)
+    {
+
+        Quaternion targetRotation = faceUp ? Quaternion.identity : Quaternion.Euler(0, 0, 180);
+        Debug.LogError("DEBUG SPAWN1 " + card.ToString() + targetRotation + " " + faceUp + " " + dealerSecond);
+
+        spawnCards.MoveCard(card, position, targetRotation, 2.0f, dealerSecond);
+        yield return new WaitForSeconds(1); // Waiting time for the card to move into position
+    }
+
+    private Vector3 CalculateNextCardPosition(Vector3 currentPosition, Vector3 offset)
+    {
+        return currentPosition + offset;
+    }
+
+
+
+    public void DealerHit(bool faceUp = true, bool dealerSecond = false)
+    {
+        Card newCard = deck.GetTopCard();
+        Vector3 spawnPosition = dealerSecond ? initialDealerCardPosition + dealerCardSpawnOffset : initialDealerCardPosition;
+        StartCoroutine(SpawnCard(newCard, spawnPosition, faceUp, dealerSecond));
+        dealer.AddCard(newCard, dealer.ActiveHandIndex);
+        initialDealerCardPosition += dealerCardSpawnOffset;
+        Debug.LogError("DEALER DECISION IS HIT");
+    }
+
+    IEnumerator DealerTurn()
     {
 
         // FLIP DEALERS SECOND CARD 
-        DealerFlipSecondCard(dealer.Hands[dealer.ActiveHandIndex].Cards[1]);
+        StartCoroutine(DealerFlipSecondCard(dealer.Hands[dealer.ActiveHandIndex].Cards[1]));
+
 
         while (dealer.GetCurrentHandValue() < 17)
         {
-            Card newCard = deck.GetTopCard();
-            dealer.AddCard(newCard);
-            SpawnCard(newCard, initialDealerCardPosition);
-
+            StartCoroutine(DealerHit());
         }
+        yield return new WaitForSeconds(1);
+    }
+
+    IEnumerator DealerHit()
+    {
+        Card newCard = deck.GetTopCard();
+        dealer.AddCard(newCard, dealer.ActiveHandIndex);
+        StartCoroutine(SpawnCard(newCard, CalculateNextCardPosition(initialDealerCardPosition, dealerCardSpawnOffset), true));
+
+        initialDealerCardPosition = CalculateNextCardPosition(initialDealerCardPosition, dealerCardSpawnOffset);
+        yield return new WaitForSeconds(1);
+    }
+
+
+    IEnumerator DealerFlipSecondCard(Card card)
+    {
+        // Assuming each card has a GameObject with a Card component that can be accessed to flip it
+        yield return StartCoroutine(FlipCard(card));
+
+    }
+
+    IEnumerator FlipCard(Card card)
+    {
+        // Assuming flipping involves rotating the card to show its face
+        Quaternion startRotation = card.transform.rotation;
+        Quaternion endRotation = Quaternion.Euler(0, 0, 0); // Adjust as needed for correct orientation
+        float duration = 0.5f; // Duration for the flip animation
+        float elapsed = 0;
+
+        while (elapsed < duration)
+        {
+            card.transform.rotation = Quaternion.Lerp(startRotation, endRotation, elapsed / duration);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        card.transform.rotation = endRotation; // Ensure the rotation is exact
     }
     void EvaluateHands()
     {
@@ -130,7 +216,14 @@ public class Game : MonoBehaviour
             isDealerWin = true;
         }
     }
-
+    public void Hit()
+    {
+        Card newCard = deck.GetTopCard();
+        StartCoroutine(SpawnCard(newCard, initialPlayerCardPosition, true)); // Assuming face-up by default
+        player.AddCard(newCard, player.ActiveHandIndex);
+        initialPlayerCardPosition += playerCardSpawnOffset;
+        Debug.LogError("DEBUG DECISION IS HIT");
+    }
 
     void ResetForNextRound()
     {
@@ -203,6 +296,7 @@ public class Game : MonoBehaviour
 
 
             yield return StartCoroutine(PlayFullGame());
+            ResetForNextRound();
         }
     }
 
@@ -213,8 +307,9 @@ public class Game : MonoBehaviour
         SetupGame();
         DealInitialCards();
 
-        SpawnCardsForGame(player);
-        SpawnCardsForGame(dealer, true);
+        Debug.LogError("DEBUG PLAYER STARTING HAND " + player.ToString());
+        Debug.LogError("DEBUG DEALER STARTING HAND " + dealer.ToString());
+        StartCoroutine(SpawnInitialCards());
 
 
 
@@ -250,7 +345,7 @@ public class Game : MonoBehaviour
 
         }
 
-        ResetForNextRound();
+
     }
 
 
@@ -258,73 +353,6 @@ public class Game : MonoBehaviour
     {
 
         Debug.LogError("AMOUNT " + betAmount.GetIntValue(amount));
-    }
-
-
-    public void SpawnCardsForGame(Player player, bool isDealer = false, bool isSplit = false)
-    {
-        // Determine the initial spawn position based on whether the player is a dealer or not
-        Vector3 spawnPosition = isDealer ? initialDealerCardPosition : initialPlayerCardPosition;
-
-
-        if (player.ActiveHandIndex > 0 && !isDealer)  // Assuming the first hand (index 0) is never a split
-        {
-            spawnPosition = splitsHandSpawnVec + new Vector3(playerCardSpawnOffset.x * player.ActiveHandIndex, 0, 0);
-        }
-        // Adjust spawn position for split hands
-
-
-        // Determine the offset to apply after each card spawn
-        Vector3 spawnOffset = isDealer ? dealerCardSpawnOffset : playerCardSpawnOffset;
-
-        // Iterate through the cards in the active hand
-        foreach (Card card in player.Hands[player.ActiveHandIndex].Cards)
-        {
-            // For dealer, the second card might need to be flipped
-            bool shouldFlip = isDealer && player.Hands[player.ActiveHandIndex].Cards.IndexOf(card) == 1;
-            SpawnCard(card, spawnPosition, shouldFlip);
-            spawnPosition += spawnOffset; // Move the position for the next card
-        }
-
-        // Update the initial position to the last used position for the next round's first card
-        if (isDealer)
-        {
-            initialDealerCardPosition = spawnPosition;
-        }
-        else if (!isSplit) // Only update if not a split to prevent overriding the split position
-        {
-            initialPlayerCardPosition = spawnPosition;
-        }
-    }
-
-
-    IEnumerator PauseBriefly()
-    {
-        yield return new WaitForSeconds(5);
-    }
-
-    public void SpawnCard(Card card, Vector3 position, bool flipped = false)
-    {
-        if (card != null)
-        {
-            Debug.Log($"Spawning card: {card.ToString()} at position {position}");
-
-            // Set the rotation based on the flipped flag
-            Quaternion rotation = flipped ? Quaternion.Euler(0, 0, 180) : Quaternion.identity;
-
-
-            // Move the card to the specified position with the given rotation
-            StartCoroutine(spawnCards.MoveCard(card, position, rotation, 1.0f)); // Modified to include rotation handling
-            audioSource.clip = handDealing;
-            audioSource.Play();
-            StartCoroutine(PauseBriefly());
-
-        }
-
-        else
-        {
-            Debug.LogError("Attempted to spawn a null card.");
-        }
     }
 
 
@@ -353,28 +381,6 @@ public class Game : MonoBehaviour
         }
     }
 
-    void HandleSplitSpawn()
-    {
-        // Check if there is at least one hand and the hand has at least two cards for a split
-
-        // Get the second card of the first hand
-        Card cardToMove = player.Hands[player.ActiveHandIndex].Cards[1];
-
-        // Assuming the second hand exists and is expecting at least one card
-        if (player.Hands.Count > 1)
-        {
-            // Calculate new position for the first card of the second hand
-            Vector3 newCardPosition = splitsHandSpawnVec;
-
-            // Assuming Card class has a GameObject field named CardObject representing the card in the scene
-            if (cardToMove.CardPrefab != null)
-            {
-                cardToMove.CardPrefab.transform.position = newCardPosition;
-            }
-        }
-
-    }
-
     void Split()
     {
         player.Split();
@@ -383,13 +389,17 @@ public class Game : MonoBehaviour
 
     }
 
-    void Hit()
+    void HandleSplitSpawn()
     {
-        Card newCard = deck.GetTopCard();
-        SpawnCard(newCard, initialPlayerCardPosition);
-        player.AddCard(newCard, player.ActiveHandIndex);
-        Debug.LogError("DEBUG DECISION IS HIT");
+        if (player.Hands.Count > 1 && player.Hands[1].Cards.Count > 0)
+        {
+            Card cardToMove = player.Hands[player.ActiveHandIndex + 1].Cards[0];  // Assuming this is the card moved to the new hand
 
+            Vector3 newCardPosition = initialPlayerCardPosition + dealerCardSpawnOffset;  // Adjust if needed
+            Quaternion targetRotation = Quaternion.identity;  // Assuming no specific rotation is needed
+
+            // StartCoroutine(spawnCards.MoveCard(cardToMove, newCardPosition, targetRotation, 1.0f, false));
+        }
     }
 
     void Stand()

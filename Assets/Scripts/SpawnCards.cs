@@ -34,7 +34,7 @@ public class SpawnCards : MonoBehaviour
     //     card.transform.rotation = targetRotation;
     //     yield return null;
     // }
-    public IEnumerator MoveCard(Card card, Vector3 targetPosition, Quaternion targetRotation, float duration)
+    public void MoveCard(Card card, Vector3 targetPosition, Quaternion targetRotation, float duration, bool dealerSecond = false)
     {
         // Store the starting position and rotation
         Vector3 startPosition = card.transform.position;
@@ -48,20 +48,40 @@ public class SpawnCards : MonoBehaviour
             // Calculate the interpolation fraction
             float fraction = elapsedTime / duration;
 
-            // Update the card's position and rotation
+            // Update the card's position
             card.transform.position = Vector3.Lerp(startPosition, targetPosition, fraction);
-            card.transform.rotation = Quaternion.Lerp(startRotation, targetRotation, fraction);
+
+            // Conditionally update the rotation based on the dealerSecond flag
+            if (dealerSecond)
+            {
+                card.transform.rotation = Quaternion.Lerp(startRotation, targetRotation, fraction);
+            }
+            else
+            {
+                // Keep the rotation constant to prevent the card's face from being revealed
+                card.transform.rotation = startRotation;
+            }
 
             // Increment the elapsed time by the delta time since last frame
             elapsedTime += Time.deltaTime;
 
             // Yield until the next frame
-            yield return null;
         }
 
-        // Directly set the final position and rotation to ensure precision
+        // Set the final position
         card.transform.position = targetPosition;
-        card.transform.rotation = targetRotation;
+
+        // Conditionally set the final rotation
+        // if (!dealerSecond)
+        // {
+        // card.transform.rotation = targetRotation;
+        // }
+        // else
+        // {
+        //     // Ensure the card's rotation remains as it started if dealerSecond is true
+        //     card.transform.rotation = startRotation;
+        // }
     }
+
 
 }
