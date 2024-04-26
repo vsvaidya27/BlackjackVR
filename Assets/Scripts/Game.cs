@@ -96,10 +96,9 @@ public class Game : MonoBehaviour
     {
 
         Quaternion targetRotation = faceUp ? Quaternion.identity : Quaternion.Euler(0, 0, 180);
+        Debug.LogError("DEBUG SPAWN1 " + card.ToString() + targetRotation + " " + faceUp + " " + dealerSecond);
 
         spawnCards.MoveCard(card, position, targetRotation, 2.0f, dealerSecond);
-        audioSource.clip = handDealing;
-        audioSource.Play();
         yield return new WaitForSeconds(1); // Waiting time for the card to move into position
     }
 
@@ -122,33 +121,26 @@ public class Game : MonoBehaviour
 
     IEnumerator DealerTurn()
     {
-        // Correctly wait for the dealer's second card to flip
-        yield return StartCoroutine(DealerFlipSecondCard(dealer.Hands[dealer.ActiveHandIndex].Cards[1]));
 
-        // Wait for each hit to complete before checking if another hit is needed
+        // FLIP DEALERS SECOND CARD 
+        StartCoroutine(DealerFlipSecondCard(dealer.Hands[dealer.ActiveHandIndex].Cards[1]));
+
+
         while (dealer.GetCurrentHandValue() < 17)
         {
-
-            yield return StartCoroutine(DealerHit());
+            StartCoroutine(DealerHit());
         }
-
-        // Additional wait after all actions to observe the dealer's final hand
-        yield return new WaitForSeconds(2);
+        yield return new WaitForSeconds(1);
     }
 
     IEnumerator DealerHit()
     {
         Card newCard = deck.GetTopCard();
         dealer.AddCard(newCard, dealer.ActiveHandIndex);
+        StartCoroutine(SpawnCard(newCard, CalculateNextCardPosition(initialDealerCardPosition, dealerCardSpawnOffset), true));
 
-
-        // Wait for the card to be spawned and moved into position
-        yield return StartCoroutine(SpawnCard(newCard, initialDealerCardPosition, true));
-
-        Vector3 nextPosition = CalculateNextCardPosition(initialDealerCardPosition, dealerCardSpawnOffset);
-
-        // Update the initial dealer card position for the next card
-        initialDealerCardPosition = nextPosition;
+        initialDealerCardPosition = CalculateNextCardPosition(initialDealerCardPosition, dealerCardSpawnOffset);
+        yield return new WaitForSeconds(1);
     }
 
 
@@ -256,6 +248,7 @@ public class Game : MonoBehaviour
     public void captureNewGame()
     {
         isNewGame = true;
+        Debug.LogError("DEBUG: THUMBS UP CAPTURED");
     }
 
 
@@ -341,7 +334,7 @@ public class Game : MonoBehaviour
             }
 
             Debug.LogError("DEBUG DEALER IS ABOUT TO PLAY" + dealer.ToString());
-            StartCoroutine(DealerTurn());
+            DealerTurn();
             Debug.LogError("DEBUG DEALER AFTER PLAYING HAND " + dealer.ToString());
 
             yield return new WaitForSeconds(3);
