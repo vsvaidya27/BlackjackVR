@@ -27,11 +27,41 @@ public class SpawnCards : MonoBehaviour
     //         MoveCard(secondCard, new Vector3(40, 11.5f, 220), speed2);
     // }
 
-    public void MoveCard(Card card, Vector3 targetPosition, Quaternion targetRotation, float speed)
-    {
+    // public IEnumerator MoveCard(Card card, Vector3 targetPosition, Quaternion targetRotation, float speed)
+    // {
 
+    //     card.transform.position = targetPosition;
+    //     card.transform.rotation = targetRotation;
+    //     yield return null;
+    // }
+    public IEnumerator MoveCard(Card card, Vector3 targetPosition, Quaternion targetRotation, float duration)
+    {
+        // Store the starting position and rotation
+        Vector3 startPosition = card.transform.position;
+        Quaternion startRotation = card.transform.rotation;
+
+        float elapsedTime = 0;
+
+        // Continue the operation until the card reaches the target position and rotation
+        while (elapsedTime < duration)
+        {
+            // Calculate the interpolation fraction
+            float fraction = elapsedTime / duration;
+
+            // Update the card's position and rotation
+            card.transform.position = Vector3.Lerp(startPosition, targetPosition, fraction);
+            card.transform.rotation = Quaternion.Lerp(startRotation, targetRotation, fraction);
+
+            // Increment the elapsed time by the delta time since last frame
+            elapsedTime += Time.deltaTime;
+
+            // Yield until the next frame
+            yield return null;
+        }
+
+        // Directly set the final position and rotation to ensure precision
         card.transform.position = targetPosition;
         card.transform.rotation = targetRotation;
-
     }
+
 }

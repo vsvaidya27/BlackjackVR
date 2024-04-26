@@ -57,6 +57,17 @@ public class Player : MonoBehaviour
 
     public void ResetForNewRound()
     {
+        foreach (var hand in Hands)
+        {
+            foreach (var card in hand.Cards)
+            {
+                // Set the card's GameObject to inactive
+                if (card.CardPrefab != null)
+                    card.CardPrefab.SetActive(false);
+            }
+        }
+
+        // Clear the hands after deactivating the card objects
         Hands.Clear();
         Hands.Add((new List<Card>(), false));
         ActiveHandIndex = 0;

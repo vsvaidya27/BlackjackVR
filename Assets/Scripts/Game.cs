@@ -1,4 +1,5 @@
 using System.Collections;
+using Meta.WitAi.Data;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -7,28 +8,28 @@ public class Game : MonoBehaviour
     public Player player;
     public Player dealer;
     public Deck deck;
-
     private bool isPlayerWin = false;
     private bool isDealerWin = false;
     private bool isPush = false;
     private bool isBlackjack = false;
-
-    public bool splitDetected;
-    public bool hitDetected;
-    public bool standDetected;
-
+    private bool splitDetected = false;
+    private bool hitDetected = false;
+    private bool standDetected = false;
+    private bool isNewGame = false;
     private Vector3 initialPlayerCardPosition = new Vector3(-2.2f, 10.2f, 226.8f);
+    private Vector3 splitsHandSpawnVec = new Vector3(-32.2f, 10.2f, 226.8f);
     private Vector3 initialDealerCardPosition = new Vector3(24.3f, 10.5f, 100.4f);
     private float playerSpawnZOffset = -20f;  // Offset for each new card in the x and y directions
     private float playerSpawnYOffset = 0.3f;  // Offset for each new card in the x and y directions
     private float playerSpawnXOffset = -15f;  // Offset for each new card in the x and y directions
-    private float dealerSpawnXOffset = -15f;
+    private float dealerSpawnXOffset = -30f;
     private Vector3 playerCardSpawnOffset;
     private Vector3 dealerCardSpawnOffset;
-
-
+    public WitIntValue betAmount;
     public SpawnCards spawnCards;
 
+    public AudioSource audioSource;
+    public AudioClip handDealing, winSound, loseSound, lobbySound;
 
     void Start()
     {
@@ -45,7 +46,9 @@ public class Game : MonoBehaviour
         GameObject dealerObject = new GameObject("Dealer");
 
         dealer = dealerObject.AddComponent<Player>();
-        SetupGame();
+
+
+        StartGameLoop();
     }
 
     void SetupGame()
@@ -56,58 +59,78 @@ public class Game : MonoBehaviour
         standDetected = false;
 
         Debug.LogError("GAME SETUP DONE");
-        StartCoroutine(PlayFullGame());
 
+    }
+
+    void DealerFlipSecondCard(Card secondCard)
+    {
+
+        SpawnCard(secondCard, secondCard.transform.position);
     }
 
     void DealerTurn()
     {
+
+        // FLIP DEALERS SECOND CARD 
+        DealerFlipSecondCard(dealer.Hands[dealer.ActiveHandIndex].Cards[1]);
+
         while (dealer.GetCurrentHandValue() < 17)
         {
             Card newCard = deck.GetTopCard();
-            SpawnCard(newCard, initialDealerCardPosition);
             dealer.AddCard(newCard);
-            // AnimateCard(newCard, dealer);
+            SpawnCard(newCard, initialDealerCardPosition);
+
         }
     }
-
     void EvaluateHands()
     {
+        int playerHandValue = player.GetCurrentHandValue();
+        int dealerHandValue = dealer.GetCurrentHandValue();
 
-
-        if (player.GetCurrentHandValue() > 21)
+        // Check for player bust
+        if (playerHandValue > 21)
         {
-            Debug.LogError("DEBUG DEALER WIN");
-
+            Debug.LogError("DEBUG PLAYER BUST: Dealer wins.");
             isDealerWin = true;
-            return;
         }
-
-
-        else if (player.GetCurrentHandValue() == dealer.GetCurrentHandValue())
+        // Check for dealer bust
+        else if (dealerHandValue > 21)
         {
-
-            Debug.LogError("DEBUG PUSH");
-
+            Debug.LogError("DEBUG DEALER BUST: Player wins.");
+            isPlayerWin = true;
+        }
+        // Check for push
+        else if (playerHandValue == dealerHandValue)
+        {
+            Debug.LogError("DEBUG PUSH: Player and Dealer tie.");
             isPush = true;
-            return;
         }
-
-        else if (player.GetCurrentHandValue() == 21)
+        // Check if player has a blackjack and dealer does not
+        else if (playerHandValue == 21 && dealerHandValue != 21)
         {
-            Debug.LogError("DEBUG BJ");
-
+            Debug.LogError("DEBUG BLACKJACK: Player wins with a Blackjack.");
             isBlackjack = true;
-            return;
         }
+        // Check if dealer has a blackjack and player does not
+        else if (dealerHandValue == 21 && playerHandValue != 21)
+        {
+            Debug.LogError("DEBUG BLACKJACK: Dealer wins with a Blackjack.");
+            isDealerWin = true;
+        }
+        // Other cases where player's hand value is greater than dealer's
+        else if (playerHandValue > dealerHandValue)
+        {
+            Debug.LogError("DEBUG PLAYER WIN: Player's hand is higher.");
+            isPlayerWin = true;
+        }
+        // Remaining case: Dealer's hand value is higher than player's
         else
         {
-            Debug.LogError("DEBUG PLAYER WIN");
-
-            isPlayerWin = true;
-            return;
+            Debug.LogError("DEBUG DEALER WIN: Dealer's hand is higher.");
+            isDealerWin = true;
         }
     }
+
 
     void ResetForNextRound()
     {
@@ -123,6 +146,16 @@ public class Game : MonoBehaviour
         dealer.ResetForNewRound();
         player.ResetForNewRound();
 
+
+        initialPlayerCardPosition = new Vector3(-2.2f, 10.2f, 226.8f);
+        initialDealerCardPosition = new Vector3(24.3f, 10.5f, 100.4f);
+
+    }
+
+    public void captureNewGame()
+    {
+        isNewGame = true;
+        Debug.LogError("DEBUG: THUMBS UP CAPTURED");
     }
 
 
@@ -136,27 +169,54 @@ public class Game : MonoBehaviour
 
         else if (isPlayerWin || isBlackjack)
         {
+            audioSource.clip = winSound;
+            audioSource.Play();
         }
 
         else if (isDealerWin)
         {
 
+            audioSource.clip = loseSound;
+            audioSource.Play();
         }
 
     }
 
+    void StartGameLoop()
+    {
+        StartCoroutine(playLoop());
+    }
+
+    IEnumerator checkForNewGame()
+    {
+        yield return new WaitUntil(() => isNewGame);
+
+    }
+    IEnumerator playLoop()
+    {
+        while (true)
+        {
+
+            yield return StartCoroutine(checkForNewGame());
+            isNewGame = false;
+            Debug.LogError("DEBUG: NEW GAME STARTING");
+
+
+            yield return StartCoroutine(PlayFullGame());
+        }
+    }
 
     IEnumerator PlayFullGame()
     {
         // Assume initial setup and betting here
+
+        SetupGame();
         DealInitialCards();
 
         SpawnCardsForGame(player);
         SpawnCardsForGame(dealer, true);
 
 
-        Debug.LogError("DEBUG PLAYER STARTING HAND " + player.ToString());
-        Debug.LogError("DEBUG DEALER STARTING HAND " + dealer.ToString());
 
         for (int i = 0; i < player.Hands.Count; i++)
         {
@@ -166,13 +226,9 @@ public class Game : MonoBehaviour
             while (player.GetCurrentHandValue() < 21)
             {
                 yield return StartCoroutine(WaitForPlayerDecision());
+                Debug.LogError("DEBUG PLAYER STARTING HAND " + player.ToString());
+                Debug.LogError("DEBUG DEALER STARTING HAND " + dealer.ToString());
                 ProcessPlayerDecision();
-
-
-                // Debug.LogError("DEBUG PLAYER HAND AFTER DECISION" + player.ToString());
-                // Debug.LogError("DEBUG DECISION STAND CHECKER: " + player.Hands[player.ActiveHandIndex].IsStanding);
-                // Debug.LogError("DEBUG BREAK: " + (player.GetCurrentHandValue() >= 21 || player.Hands[player.ActiveHandIndex].IsStanding));
-
 
                 splitDetected = false;
                 hitDetected = false;
@@ -181,56 +237,70 @@ public class Game : MonoBehaviour
                 if (player.GetCurrentHandValue() >= 21 || player.Hands[player.ActiveHandIndex].IsStanding) break;
 
             }
+
+            Debug.LogError("DEBUG DEALER IS ABOUT TO PLAY" + dealer.ToString());
+            DealerTurn();
+            Debug.LogError("DEBUG DEALER AFTER PLAYING HAND " + dealer.ToString());
+
+            yield return new WaitForSeconds(3);
+            EvaluateHands();
+
+            // REGISTER ROUND UPDATES - DISPLAY WINNER - PAYOUT ETC.
+            EndGameUpdates();
+
         }
-
-        Debug.LogError("DEBUG DEALER IS ABOUT TO PLAY" + player.ToString());
-        DealerTurn();
-        Debug.LogError("DEBUG DEALER AFTER PLAYING HAND " + dealer.ToString());
-
-
-        EvaluateHands();
-
-        // REGISTER ROUND UPDATES - DISPLAY WINNER - PAYOUT ETC.
-        EndGameUpdates();
 
         ResetForNextRound();
     }
 
 
-    public void SpawnCardsForGame(Player player, bool isDealer = false)
+    public void getVoiceInput(string amount)
     {
-        // Start position for the player's cards
 
-        if (!isDealer)
+        Debug.LogError("AMOUNT " + betAmount.GetIntValue(amount));
+    }
+
+
+    public void SpawnCardsForGame(Player player, bool isDealer = false, bool isSplit = false)
+    {
+        // Determine the initial spawn position based on whether the player is a dealer or not
+        Vector3 spawnPosition = isDealer ? initialDealerCardPosition : initialPlayerCardPosition;
+
+
+        if (player.ActiveHandIndex > 0 && !isDealer)  // Assuming the first hand (index 0) is never a split
         {
-
-            Vector3 spawnPosition = initialPlayerCardPosition;
-
-            foreach (Card card in player.Hands[player.ActiveHandIndex].Cards)
-            {
-                SpawnCard(card, spawnPosition);
-                spawnPosition += playerCardSpawnOffset; // Move the position for the next card
-            }
-
-            initialPlayerCardPosition = spawnPosition;
-
+            spawnPosition = splitsHandSpawnVec + new Vector3(playerCardSpawnOffset.x * player.ActiveHandIndex, 0, 0);
         }
-        else
-        {
-            int cardIndex = 0;
-            Vector3 spawnPosition = initialDealerCardPosition;
+        // Adjust spawn position for split hands
 
-            // Vector3 spawnPosition = initialDealer;
-            // You can adjust this for the dealer's logic if needed
-            foreach (Card card in player.Hands[player.ActiveHandIndex].Cards)
-            {
-                bool flipped = (cardIndex == 1);
-                SpawnCard(card, spawnPosition, flipped);
-                spawnPosition += dealerCardSpawnOffset; // Adjust position similarly for dealer's cards
-                cardIndex += 1;
-            }
+
+        // Determine the offset to apply after each card spawn
+        Vector3 spawnOffset = isDealer ? dealerCardSpawnOffset : playerCardSpawnOffset;
+
+        // Iterate through the cards in the active hand
+        foreach (Card card in player.Hands[player.ActiveHandIndex].Cards)
+        {
+            // For dealer, the second card might need to be flipped
+            bool shouldFlip = isDealer && player.Hands[player.ActiveHandIndex].Cards.IndexOf(card) == 1;
+            SpawnCard(card, spawnPosition, shouldFlip);
+            spawnPosition += spawnOffset; // Move the position for the next card
+        }
+
+        // Update the initial position to the last used position for the next round's first card
+        if (isDealer)
+        {
             initialDealerCardPosition = spawnPosition;
         }
+        else if (!isSplit) // Only update if not a split to prevent overriding the split position
+        {
+            initialPlayerCardPosition = spawnPosition;
+        }
+    }
+
+
+    IEnumerator PauseBriefly()
+    {
+        yield return new WaitForSeconds(5);
     }
 
     public void SpawnCard(Card card, Vector3 position, bool flipped = false)
@@ -242,9 +312,15 @@ public class Game : MonoBehaviour
             // Set the rotation based on the flipped flag
             Quaternion rotation = flipped ? Quaternion.Euler(0, 0, 180) : Quaternion.identity;
 
+
             // Move the card to the specified position with the given rotation
-            spawnCards.MoveCard(card, position, rotation, 1.0f); // Modified to include rotation handling
+            StartCoroutine(spawnCards.MoveCard(card, position, rotation, 1.0f)); // Modified to include rotation handling
+            audioSource.clip = handDealing;
+            audioSource.Play();
+            StartCoroutine(PauseBriefly());
+
         }
+
         else
         {
             Debug.LogError("Attempted to spawn a null card.");
@@ -261,10 +337,6 @@ public class Game : MonoBehaviour
 
     void ProcessPlayerDecision()
     {
-        Debug.LogError("DEBUG DECISION IS SPLIT = " + splitDetected);
-        Debug.LogError("DEBUG DECISION IS HIT = " + hitDetected);
-        Debug.LogError("DEBUG DECISION IS STAND = " + standDetected);
-
 
 
         if (splitDetected && player.CanSplit())
@@ -281,9 +353,32 @@ public class Game : MonoBehaviour
         }
     }
 
+    void HandleSplitSpawn()
+    {
+        // Check if there is at least one hand and the hand has at least two cards for a split
+
+        // Get the second card of the first hand
+        Card cardToMove = player.Hands[player.ActiveHandIndex].Cards[1];
+
+        // Assuming the second hand exists and is expecting at least one card
+        if (player.Hands.Count > 1)
+        {
+            // Calculate new position for the first card of the second hand
+            Vector3 newCardPosition = splitsHandSpawnVec;
+
+            // Assuming Card class has a GameObject field named CardObject representing the card in the scene
+            if (cardToMove.CardPrefab != null)
+            {
+                cardToMove.CardPrefab.transform.position = newCardPosition;
+            }
+        }
+
+    }
+
     void Split()
     {
         player.Split();
+        HandleSplitSpawn();
         Debug.LogError("DEBUG DECISION IS SPLIT");
 
     }
@@ -310,7 +405,6 @@ public class Game : MonoBehaviour
         player.Hands[player.ActiveHandIndex] = updatedHand;
         Debug.LogError("DEBUG DECISION IS STAND");
 
-
     }
 
 
@@ -330,7 +424,6 @@ public class Game : MonoBehaviour
     }
 
 
-
     void DealInitialCards()
     {
         player.AddCard(deck.GetTopCard());
@@ -338,13 +431,5 @@ public class Game : MonoBehaviour
         player.AddCard(deck.GetTopCard());
         dealer.AddCard(deck.GetTopCard());
 
-
-    }
-
-
-
-    void AnimateCard(Card card, Player player)
-    {
-        // Assume some animation logic here
     }
 }
