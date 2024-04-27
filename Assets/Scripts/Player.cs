@@ -75,18 +75,22 @@ public class Player : MonoBehaviour
 
     public override string ToString()
     {
-        string playerHands = "";
-        foreach (var hand in Hands)
+        string playerHandRepresentation = "[";
+
+        // Assuming `ActiveHandIndex` is the index of the currently active hand
+        var activeHand = Hands[ActiveHandIndex];
+
+        foreach (Card card in activeHand.Cards)
         {
-            playerHands += "[";
-            foreach (Card card in hand.Cards)
-            {
-                playerHands += $"{card.CardRank}, ";
-            }
-            playerHands = playerHands.TrimEnd(',', ' ') + "]\n";
+            playerHandRepresentation += $"{card.CardRank}, ";
         }
-        return playerHands.TrimEnd('\n');
+
+        // Trim the trailing comma and space, then close the bracket
+        playerHandRepresentation = playerHandRepresentation.TrimEnd(',', ' ') + "]";
+
+        return playerHandRepresentation;
     }
+
 
     public int GetCurrentHandValue()
     {
