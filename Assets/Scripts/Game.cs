@@ -33,6 +33,7 @@ public class Game : MonoBehaviour
     public AudioSource audioSource;
     public AudioClip handDealing, winSound, loseSound, lobbySound;
     public TMP_Text startMessage;
+    public TMP_Text pushMessage;
     public TMP_Text winMessage;
     public TMP_Text loosetMessage;
 
@@ -55,7 +56,7 @@ public class Game : MonoBehaviour
         startMessage.gameObject.SetActive(true);
         winMessage.gameObject.SetActive(false);
         loosetMessage.gameObject.SetActive(false);
-
+        pushMessage.gameObject.SetActive(false);
 
         StartGameLoop();
     }
@@ -277,6 +278,7 @@ public class Game : MonoBehaviour
         startMessage.gameObject.SetActive(true);
         winMessage.gameObject.SetActive(false);
         loosetMessage.gameObject.SetActive(false);
+        pushMessage.gameObject.SetActive(false);
 
         dealer.ResetForNewRound();
         player.ResetForNewRound();
@@ -301,6 +303,7 @@ public class Game : MonoBehaviour
 
         if (isPush)
         {
+            pushMessage.gameObject.SetActive(true);
         }
 
         else if (isPlayerWin || isBlackjack)

@@ -22,12 +22,7 @@ public class Card : MonoBehaviour
     {
         CardPrefab = cardPrefab;
 
-        if (rank == 1)
-        {
-            cardRank = 11;
-        }
-
-        else if (rank == 11 || rank == 12 || rank == 13)
+        if (rank == 11 || rank == 12 || rank == 13)
         {
             cardRank = 10;
         }
